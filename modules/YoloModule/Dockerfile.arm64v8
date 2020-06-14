@@ -1,9 +1,10 @@
-FROM balenalib/jetson-tx2-ubuntu:bionic as iot-sdk-python-builder
+#FROM balenalib/jetson-nano-ubuntu-python:3.6-bionic as iot-sdk-python-builder
+FROM arm64v8/ubuntu:bionic as iot-sdk-python-builder
 
 # Update image
 SHELL ["/bin/bash", "-c"]
 
-RUN apt-get update && apt-get install -y cmake build-essential curl libcurl4-openssl-dev \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y cmake build-essential curl libcurl4-openssl-dev \
     libssl-dev uuid-dev apt-utils python python-pip python-virtualenv python3 python3-pip python3-virtualenv \
     libboost-python-dev pkg-config valgrind sudo git software-properties-common && \
     rm -rf /var/lib/apt/lists/* 
@@ -25,7 +26,7 @@ RUN source env3/bin/activate && ./src/build_all/linux/release.sh --build-python 
 #RUN ./src/build_all/linux/setup.sh
 #RUN ./src/build_all/linux/release.sh
 
-FROM toolboc/jetson-nano-l4t-cuda-cudnn-opencv-darknet
+FROM rheartpython/jetson-nano-l4t-cuda-cudnn-opencv-darknet
 
 WORKDIR /app
 
@@ -60,3 +61,4 @@ ADD /app/ .
 EXPOSE 80
 
 ENTRYPOINT [ "python3", "-u", "./main.py" ]
+

@@ -19,8 +19,8 @@ import os
 import json
 from datetime import datetime
 
-yolocfg  = r'yolo/yolov3-tiny.cfg'
-yoloweight = r'yolo/yolov3-tiny.weights'
+yolocfg  = r'yolo/yolov4.cfg'
+yoloweight = r'yolo/yolov4.weights'
 classesFile = r'yolo/coco.names'
 dataFile = r'yolo/coco.data'
 

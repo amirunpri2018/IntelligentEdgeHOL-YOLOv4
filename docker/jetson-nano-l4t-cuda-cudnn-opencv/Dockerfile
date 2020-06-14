@@ -1,4 +1,4 @@
-FROM toolboc/jetson-nano-l4t-cuda-cudnn
+FROM rheartpython/jetson-nano-l4t-cuda-cudnn
 
 #Required for libjasper-dev
 RUN echo "deb http://ports.ubuntu.com/ubuntu-ports/ xenial-security main restricted" | sudo tee -a /etc/apt/sources.list

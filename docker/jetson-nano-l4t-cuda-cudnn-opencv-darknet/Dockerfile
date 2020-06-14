@@ -1,4 +1,4 @@
-FROM toolboc/jetson-nano-l4t-cuda-cudnn-opencv
+FROM rheartpython/jetson-nano-l4t-cuda-cudnn-opencv
 
 RUN apt update && apt install -y libcanberra-gtk-module && \
     rm -rf /var/lib/apt/lists/* 
