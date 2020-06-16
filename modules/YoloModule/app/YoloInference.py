@@ -19,10 +19,10 @@ import os
 import json
 from datetime import datetime
 
-yolocfg  = r'yolo/yolov4.cfg'
-yoloweight = r'yolo/yolov4.weights'
-classesFile = r'yolo/coco.names'
-dataFile = r'yolo/coco.data'
+yolocfg  = b'yolo/yolov4.cfg'
+yoloweight = b'yolo/yolov4.weights'
+classesFile = b'yolo/coco.names'
+dataFile = b'yolo/coco.data'
 
 encoding = 'utf-8'
 
@@ -90,12 +90,12 @@ class YoloInference(object):
 
             detections = darknet.detect(darknet.netMain, darknet.metaMain, frame, confidenceLevel)
 
-            countsByClassId = {};
+            countsByClassId = {}
 
             for detection in detections:
               
                 classLabel = detection[0]
-                classID = str(detection[0], encoding)
+                classID = str(detection[0])
                 confidence = detection[1]
 
                 if confidence > confidenceLevel:

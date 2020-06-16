@@ -31,7 +31,6 @@ from ctypes import *
 import math
 import random
 import os
-import numpy as np
 
 def sample(probs):
     s = sum(probs)
@@ -60,8 +59,13 @@ class DETECTION(Structure):
                 ("prob", POINTER(c_float)),
                 ("mask", POINTER(c_float)),
                 ("objectness", c_float),
-                ("sort_class", c_int)]
+                ("sort_class", c_int),
+                ("uc", POINTER(c_float)),
+                ("points", c_int)]
 
+class DETNUMPAIR(Structure):
+    _fields_ = [("num", c_int),
+                ("dets", POINTER(DETECTION))]
 
 class IMAGE(Structure):
     _fields_ = [("w", c_int),
@@ -143,6 +147,8 @@ if hasGPU:
     set_gpu = lib.cuda_set_device
     set_gpu.argtypes = [c_int]
 
+init_cpu = lib.init_cpu
+
 make_image = lib.make_image
 make_image.argtypes = [c_int, c_int, c_int]
 make_image.restype = IMAGE
@@ -157,6 +163,9 @@ make_network_boxes.restype = POINTER(DETECTION)
 
 free_detections = lib.free_detections
 free_detections.argtypes = [POINTER(DETECTION), c_int]
+
+free_batch_detections = lib.free_batch_detections
+free_batch_detections.argtypes = [POINTER(DETNUMPAIR), c_int]
 
 free_ptrs = lib.free_ptrs
 free_ptrs.argtypes = [POINTER(c_void_p), c_int]
@@ -207,7 +216,13 @@ predict_image_letterbox = lib.network_predict_image_letterbox
 predict_image_letterbox.argtypes = [c_void_p, IMAGE]
 predict_image_letterbox.restype = POINTER(c_float)
 
+network_predict_batch = lib.network_predict_batch
+network_predict_batch.argtypes = [c_void_p, IMAGE, c_int, c_int, c_int,
+                                   c_float, c_float, POINTER(c_int), c_int, c_int]
+network_predict_batch.restype = POINTER(DETNUMPAIR)
+
 def array_to_image(arr):
+    import numpy as np
     # need to return old values to avoid python freeing memory
     arr = arr.transpose(2,0,1)
     c = arr.shape[0]
@@ -230,7 +245,10 @@ def classify(net, meta, im):
     res = sorted(res, key=lambda x: -x[1])
     return res
 
-def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
+def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug=True):
+    """
+    Performs the meat of the detection
+    """
     if isinstance(image, bytes):  
         # image is a filename 
         # i.e. image = b'/darknet/data/dog.jpg'
@@ -240,31 +258,15 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
         # i.e. image = cv2.imread('/darknet/data/dog.jpg')
         im, image = array_to_image(image)
         rgbgr_image(im)
-    num = c_int(0)
-    pnum = pointer(num)
-    letter_box = 0
-    predict_image(net, im)
-    dets = get_network_boxes(net, im.w, im.h, thresh, 
-                             hier_thresh, None, 0, pnum, letter_box)
-    num = pnum[0]
-    if nms: do_nms_obj(dets, num, meta.classes, nms)
 
-    res = []
-    for j in range(num):
-        a = dets[j].prob[0:meta.classes]
-        if any(a):
-            ai = np.array(a).nonzero()[0]
-            for i in ai:
-                b = dets[j].bbox
-                res.append((meta.names[i], dets[j].prob[i], 
-                           (b.x, b.y, b.w, b.h)))
-
-    res = sorted(res, key=lambda x: -x[1])
+    if debug: print("Loaded image")
+    ret = detect_image(net, meta, im, thresh, hier_thresh, nms, debug)
     if isinstance(image, bytes): free_image(im)
-    free_detections(dets, num)
-    return res
+    if debug: print("freed image")
 
-def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
+    return ret
+
+def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug=True):
     #import cv2
     #custom_image_bgr = cv2.imread(image) # use: detect(,,imagePath,)
     #custom_image = cv2.cvtColor(custom_image_bgr, cv2.COLOR_BGR2RGB)
@@ -320,7 +322,7 @@ netMain = None
 metaMain = None
 altNames = None
 
-def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
+def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath = "yolov4.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
     """
     Convenience function to handle the detection and returns of objects.
 
@@ -377,9 +379,10 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     if not os.path.exists(metaPath):
         raise ValueError("Invalid data file path `"+os.path.abspath(metaPath)+"`")
     if netMain is None:
-        netMain = load_net_custom(configPath.encode("ascii"), weightPath.encode("ascii"), 0, 1)  # batch size = 1
+        netMain = load_net_custom(configPath, 
+                      weightPath, 0, 1)  # batch size = 1
     if metaMain is None:
-        metaMain = load_meta(metaPath.encode("ascii"))
+        metaMain = load_meta(metaPath)
     if altNames is None:
         # In Python 3, the metafile default access craps out on Windows (but not Linux)
         # Read the names file and create a list to feed to detect
@@ -408,10 +411,11 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
         raise ValueError("Invalid image path `"+os.path.abspath(imagePath)+"`")
     # Do the detection
     #detections = detect(netMain, metaMain, imagePath, thresh)	# if is used cv2.imread(image)
-    detections = detect(netMain, metaMain, imagePath.encode("ascii"), thresh)
+    detections = detect(netMain, metaMain, imagePath, thresh)
     if showImage:
         try:
             from skimage import io, draw
+            import numpy as np
             image = io.imread(imagePath)
             print("*** "+str(len(detections))+" Results, color coded by confidence ***")
             imcaption = []
@@ -462,5 +466,72 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
             print("Unable to show image: "+str(e))
     return detections
 
+def performBatchDetect(thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath = "yolov4.weights", metaPath= "./cfg/coco.data", hier_thresh=.5, nms=.45, batch_size=3):
+    import cv2
+    import numpy as np
+    # NB! Image sizes should be the same
+    # You can change the images, yet, be sure that they have the same width and height
+    img_samples = ['data/person.jpg', 'data/person.jpg', 'data/person.jpg']
+    image_list = [cv2.imread(k) for k in img_samples]
+
+    net = load_net_custom(bytes(configPath,encoding='utf-8'), bytes(weightPath, encoding='utf-8'), 0, batch_size)
+    meta = load_meta(bytes(metaPath,encoding='utf-8'))
+    pred_height, pred_width, c = image_list[0].shape
+    net_width, net_height = (network_width(net), network_height(net))
+    img_list = []
+    for custom_image_bgr in image_list:
+        custom_image = cv2.cvtColor(custom_image_bgr, cv2.COLOR_BGR2RGB)
+        custom_image = cv2.resize(
+            custom_image, (net_width, net_height), interpolation=cv2.INTER_NEAREST)
+        custom_image = custom_image.transpose(2, 0, 1)
+        img_list.append(custom_image)
+
+    arr = np.concatenate(img_list, axis=0)
+    arr = np.ascontiguousarray(arr.flat, dtype=np.float32) / 255.0
+    data = arr.ctypes.data_as(POINTER(c_float))
+    im = IMAGE(net_width, net_height, c, data)
+
+    batch_dets = network_predict_batch(net, im, batch_size, pred_width,
+                                                pred_height, thresh, hier_thresh, None, 0, 0)
+    batch_boxes = []
+    batch_scores = []
+    batch_classes = []
+    for b in range(batch_size):
+        num = batch_dets[b].num
+        dets = batch_dets[b].dets
+        if nms:
+            do_nms_obj(dets, num, meta.classes, nms)
+        boxes = []
+        scores = []
+        classes = []
+        for i in range(num):
+            det = dets[i]
+            score = -1
+            label = None
+            for c in range(det.classes):
+                p = det.prob[c]
+                if p > score:
+                    score = p
+                    label = c
+            if score > thresh:
+                box = det.bbox
+                left, top, right, bottom = map(int,(box.x - box.w / 2, box.y - box.h / 2,
+                                            box.x + box.w / 2, box.y + box.h / 2))
+                boxes.append((top, left, bottom, right))
+                scores.append(score)
+                classes.append(label)
+                boxColor = (int(255 * (1 - (score ** 2))), int(255 * (score ** 2)), 0)
+                cv2.rectangle(image_list[b], (left, top),
+                          (right, bottom), boxColor, 2)
+        cv2.imwrite(os.path.basename(img_samples[b]),image_list[b])
+
+        batch_boxes.append(boxes)
+        batch_scores.append(scores)
+        batch_classes.append(classes)
+    free_batch_detections(batch_dets, batch_size)
+    return batch_boxes, batch_scores, batch_classes    
+
 if __name__ == "__main__":
     print(performDetect())
+    #Uncomment the following line to see batch inference working 
+    #print(performBatchDetect())
