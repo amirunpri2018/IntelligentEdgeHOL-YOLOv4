@@ -11,7 +11,7 @@ urlFragment: "https://github.com/michhar/IntelligentEdgeHOL-YOLOv4"
 # Introduction 
 
 UPDATES in this fork:
-- [x] Migrate to YOLO v4
+- [x] Migrate to YOLO v4 (<a href="https://arxiv.org/abs/2004.10934" target="_blank">paper</a>)
 - [x] Deploy to Jetson AGX Xavier flashed with L4T R32.4.2 from JetPack 4.4 DP
 - [x] Updated Dockerfiles in `docker` folder (e.g. latest Darknet supporting YOLOv4) and images
 - [x] Ensure Deployment manifest creation
@@ -59,7 +59,7 @@ Development Environment:
 - Git tool(s)  
   [Git command line](https://git-scm.com/) 
 
-# Installing IoT Edge onto the Jetson Nano Device
+# Installing IoT Edge onto the Jetson AGX Xavier Device
 
 Before we install IoT Edge, we need to install a few utilities onto the Nvidia Xavier device with:
 
