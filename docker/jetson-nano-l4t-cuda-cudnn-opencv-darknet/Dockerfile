@@ -7,6 +7,7 @@ RUN apt update && apt install -y libcanberra-gtk-module && \
 WORKDIR /usr/local/src
 RUN git clone https://github.com/AlexeyAB/darknet.git && \
     cd darknet && \
+    git checkout e08a818 && \
     sed -i 's/GPU=0/GPU=1/g' Makefile && \
     sed -i 's/CUDNN=0/CUDNN=1/g' Makefile && \
     sed -i 's/CUDNN_HALF=0/CUDNN_HALF=1/g' Makefile && \
