@@ -4,20 +4,28 @@ languages:
 - python
 products:
 - iotedge
-description: "The IntelligentEdgeHOL walks through the process of deploying an IoT Edge module to an Nvidia Jetson Nano device to allow for detection of objects in YouTube videos, RTSP streams, or an attached web cam "
-urlFragment: "https://github.com/Azure/IntelligentEdgeHOL"
+description: "The IntelligentEdgeHOL-YOLOv4 walks through the process of deploying an IoT Edge module to an Nvidia Jetson AGX Xavier device to allow for detection of objects with YOLOv4 in YouTube videos, RTSP streams, or an attached web cam "
+urlFragment: "https://github.com/michhar/IntelligentEdgeHOL-YOLOv4"
 ---
 
 # Introduction 
 
+UPDATES in this fork:
+- [x] Migrate to YOLO v4
+- [x] Deploy to Jetson AGX Xavier flashed with L4T R32.4.2 from JetPack 4.4 DP
+- [x] Updated Dockerfiles in `docker` folder (e.g. latest Darknet supporting YOLOv4) and images
+- [x] Ensure Deployment manifest creation
+- [ ] Ensure updated README
+
 ![](https://pbs.twimg.com/media/D_ANZnbWsAA4EVK.jpg)
 
-The IntelligentEdgeHOL walks through the process of deploying an [IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/about-iot-edge?WT.mc_id=github-IntelligentEdgeHOL-pdecarlo) module to an Nvidia Jetson Nano device to allow for detection of objects in YouTube videos, RTSP streams, Hololens Mixed Reality Capture, or an attached web cam. It achieves performance of around 10 frames per second for most video data.    
+The IntelligentEdgeHOL-YOLOv4 walks through the process of deploying an [IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/about-iot-edge) module to an Nvidia Jetson AGX Xavier device to allow for detection of objects in YouTube videos, RTSP streams, Hololens Mixed Reality Capture, or an attached web cam. It achieves performance of 7-10 frames per second for most video data.
 
-The module ships as a fully self-contained docker image totalling around 5.5GB.  This image contains all necessary dependencies including the [Nvidia Linux for Tegra Drivers](https://developer.nvidia.com/embedded/linux-tegra) for Jetson Nano, [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit), [NVIDIA CUDA Deep Neural Network library (CUDNN)](https://developer.nvidia.com/cudnn), [OpenCV](https://github.com/opencv/opencv), and [Darknet](https://github.com/AlexeyAB/darknet). For details on how the base images are built, see the included `docker` folder.
+<img alt="Jetson Xavier" width="50%" src="https://developer.nvidia.com/sites/default/files/akamai/embedded/images/jetsonXavier/Xavier-White_Cropped_2.jpg">
 
-Object Detection is accomplished using YOLOv3-tiny with [Darknet](https://github.com/AlexeyAB/darknet) which supports detection of the following:
+The module ships as a fully self-contained docker image totalling around 5.5GB.  This image contains all necessary dependencies including the [Nvidia Linux for Tegra Drivers](https://developer.nvidia.com/embedded/linux-tegra) for Jetson Xavier, [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit), [NVIDIA CUDA Deep Neural Network library (CUDNN)](https://developer.nvidia.com/cudnn), [OpenCV](https://github.com/opencv/opencv), and [Darknet](https://github.com/AlexeyAB/darknet). For details on how the base images are built, see the included `docker` folder.
 
+Object Detection is accomplished using YOLOv4 (512x512) with [Darknet](https://github.com/AlexeyAB/darknet) which supports detection of the following COCO classes (see `modules/YoloModule/app/yolo/coco.names`):
 
 *person, bicycle, car, motorbike, aeroplane, bus, train, truck, boat, traffic light, fire hydrant, stop sign, parking meter, bench, bird, cat, dog, horse, sheep, cow, elephant, bear, zebra, giraffe, backpack, umbrella, handbag, tie, suitcase, frisbee, skis, snowboard, sports ball, kite, baseball bat, baseball glove,skateboard, surfboard, tennis racket, bottle, wine glass, cup, fork, knife, spoon, bowl, banana, apple, sandwich, orange, broccoli, carrot, hot dog, pizza, donut, cake, chair, sofa, pottedplant, bed, diningtable, toilet, tv monitor, laptop, mouse, remote, keyboard, cell phone, microwave, oventoaster, sink, refrigerator, book, clock, vase, scissors, teddy bear, hair drier, toothbrush*
 
@@ -25,21 +33,21 @@ Object Detection is accomplished using YOLOv3-tiny with [Darknet](https://github
 
 * [Yolo Object Detection with Nvidia Jetson and Hololens](https://www.youtube.com/watch?v=zxGcUmcl1qo&feature=youtu.be)
 
-# Hands-On Lab Materials 
+# Hands-On Lab Materials
 
 * [Presentation Deck](http://aka.ms/intelligentedgeholdeck)
-* [Presentation Video](http://aka.ms/intelligentedgeholvideo)
-  - Note: If you want to view a full walkthrough of this lab, skip to 38:00
-
+* [Presentation Video for Jetson Nano (related device)](http://aka.ms/intelligentedgeholvideo)
+  - Note: If you want to view a full a Jetston Nano-version walkthrough of this lab, skip to 38:00
 
 # Getting Started
+
 This lab requires that you have the following:
 
 Hardware:
-* [Nvidia Jetson Nano Device](https://amzn.to/2WFE5zF)
-* A [cooling fan](https://amzn.to/2ZI2ki9) installed on or pointed at the Nvidia Jetson Nano device 
-* USB Webcam (Optional) 
-  - Note: The power consumption will require that your device is configured to use a [5V/4A barrel adapter](https://amzn.to/32DFsTq) as mentioned [here](https://www.jetsonhacks.com/2019/04/10/jetson-nano-use-more-power/) with an [Open-CV compatible camera](https://web.archive.org/web/20120815172655/http://opencv.willowgarage.com/wiki/Welcome/OS/).
+* [Nvidia Jetson AGX Xavier Device](https://developer.nvidia.com/embedded/jetson-agx-xavier-developer-kit)
+    - Flashed with L4T R32.4.2 from JetPack 4.4 DP (Developer Preview)
+* USB Webcam or IP Camera (supporting RTSP) - Optional
+  - Note: Should be an [OpenCV compatible camera](https://web.archive.org/web/20120815172655/http://opencv.willowgarage.com/wiki/Welcome/OS/).
 
 Development Environment:
 - [Visual Studio Code (VSCode)](https://code.visualstudio.com/Download?WT.mc_id=github-IntelligentEdgeHOL-pdecarlo)
@@ -53,7 +61,7 @@ Development Environment:
 
 # Installing IoT Edge onto the Jetson Nano Device
 
-Before we install IoT Edge, we need to install a few utilities onto the Nvidia Jetson Nano device with:
+Before we install IoT Edge, we need to install a few utilities onto the Nvidia Xavier device with:
 
 ```
 sudo apt-get install -y curl nano python3-pip
@@ -61,7 +69,9 @@ sudo apt-get install -y curl nano python3-pip
 
 ARM64 builds of IoT Edge are currently being offered in preview and will eventually go into General Availability.  We will make use of the ARM64 builds to ensure that we get the best performance out of our IoT Edge solution.
 
-These builds are provided starting in the [1.0.8 release tag](https://github.com/Azure/azure-iotedge/releases/tag/1.0.8).  To install the 1.0.8 release of IoT Edge, run the following from a terminal on your Nvidia Jetson device:
+These builds are provided starting in the [1.0.9 release tag](https://github.com/Azure/azure-iotedge/releases/tag/1.0.9).  To install the 1.0.9 release of IoT Edge, run the following from a terminal on your Nvidia Xavier device:
+
+> Note: Ensure Docker-CE is installed and _not_ Moby Docker.
 
 ```
 # You can copy the entire text from this code block and 
@@ -85,9 +95,9 @@ sudo apt-get install iotedge
 
 ```
 
-# Provisioning the IoT Edge Runtime on the Jetson Nano Device
+# Provisioning the IoT Edge Runtime on the Jetson Xavier Device
 
-To manually provision a device, you need to provide it with a device connection string that you can create by registering a new IoT Edge device in your IoT hub. You can create a new device connection string to accomplish this by following the documentation for [Registering an IoT Edge device in the Azure Portal](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-register-device-portal?WT.mc_id=github-IntelligentEdgeHOL-pdecarlo) or by [Registering an IoT Edge device with the Azure-CLI](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-register-device-cli?WT.mc_id=github-IntelligentEdgeHOL-pdecarlo).
+To manually provision a device, you need to provide it with a device connection string that you can create by registering a new IoT Edge device in your IoT hub. You can create a new device connection string to accomplish this by following the documentation for [Registering an IoT Edge device in the Azure Portal](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-register-device-portal?WT.mc_id=github-IntelligentEdgeHOL-pdecarlo) or by [Registering an IoT Edge device with the Azure-CLI](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-register-device-cli).
 
 Once you have obtained a connection string, open the configuration file:
 
@@ -135,7 +145,7 @@ sudo iotedge list
 
 # Configuring the YoloModule Video Source
 
-Clone or download a copy of [this repo](https://github.com/toolboc/IntelligentEdgeHOL) and open the `IntelligentEdgeHOL` folder in Visual Studio Code.  Next, press `F1` and select `Azure IoT Hub: Select IoT Hub`.  Next, choose the IoT Hub you created when provisioning the IoT Edge Runtime on the Jetson Nano Device and follow the prompts to complete the process.
+Clone or download a copy of [this repo](https://github.com/michhar/IntelligentEdgeHOL-YOLOv4) and open the `IntelligentEdgeHOL-YOLOv4` folder in Visual Studio Code.  Next, press `F1` and select `Azure IoT Hub: Select IoT Hub`.  Next, choose the IoT Hub you created when provisioning the IoT Edge Runtime on the Jetson Nano Device and follow the prompts to complete the process.
 
 In VS Code, navigate to the `.env` file and modify the following value:
 
@@ -143,12 +153,12 @@ In VS Code, navigate to the `.env` file and modify the following value:
 
  To use a youtube video, provide a Youtube URL, ex: https://www.youtube.com/watch?v=YZkp0qBBmpw
 
- For an rtsp stream, provide a link to the rtsp stream in the format, rtsp://
+ For an rtsp stream, provide a link to the rtsp stream in the format, `rtsp://[USERNAME]:[PASSWORD]@[CAMERA_IP_WITH_PATH]`
 
  To use a HoloLens video stream, see this [article](https://blog.kloud.com.au/2016/09/01/streaming-hololens-video-to-your-web-browser/) to enable a user account in the HoloLens Web Portal, once this is configured,  provide the url to the HoloLens video streaming endpoint, ex:
- https://[USERNAME]:[PASSWORD]@[HOLOLENS_IP]/api/holographic/stream/live_high.mp4?holo=true&pv=true&mic=true&loopback=true
+ `https://[USERNAME]:[PASSWORD]@[HOLOLENS_IP]/api/holographic/stream/live_high.mp4?holo=true&pv=true&mic=true&loopback=true`
 
- If you have an attached USB web cam, provide the V4L device path (this can be obtained from the terminal with `ls -ltrh /dev/video*`, ex: /dev/video0 and open the included `deployment.template.json` and look for:
+ If you have an attached USB web cam, provide the V4L device path (this can be obtained from the terminal with `ls -ltrh /dev/video*`, ex: `/dev/video0` and open the included `deployment.template.json` and look for:
 
  ```
 {
@@ -170,11 +180,31 @@ Then, add the following (including the comma), directly beneath it
 ```
 
 
-# Deploy the YoloModule to the Jetson Nano device
+# Deploy the YoloModule to the Jetson Xavier device
 
-Create a deployment for the Jetson Nano device by right-clicking `deployment.template.json` and select `Generate IoT Edge Deployment Manifest`.  This will create a file under the config folder named `deployment.arm32v7.json`, right-click that file and select `Create Deployment for Single Device` and select the device you created when provisioning the IoT Edge Runtime on the Jetson Nano Device.  
+Create a deployment for the Jetson Xavier device by right-clicking `deployment.template.json` and select `Generate IoT Edge Deployment Manifest`.  This will create a file under a `config` folder named `deployment.amd64.json`.
 
-It may take a few minutes for the module to begin running on the device as it needs to pull an approximately 5.5GB docker image.  You can check the progress on the Nvidia Jetson device by monitoring the iotedge agent logs with:
+Update the `YoloModule` section by changing `"image": "${MODULES.YoloModule}"` to `"image": "rheartpython/yolo4module:latest-arm64v8"` which cooresponds to a docker image on Dockerhub that includes the YOLO v4 model, Darknet program, and dependencies for detecting COCO classes.
+
+So, it should now look like:
+```
+"modules": {
+          "YoloModule": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "rheartpython/yolo4module:latest-arm64v8",
+              "createOptions": "...snipped..."
+            }
+          }
+        }
+```
+
+ Right-click `deployment.amd64.json` and select "Create Deployment for Single Device" and select the device you created when provisioning the IoT Edge Runtime on the Jetson Nano Device.
+
+It may take a few minutes for the module to begin running on the device as it needs to pull an approximately 5.5GB docker image.  You can check the progress on the Nvidia Xavier device by monitoring the iotedge agent logs with:
 
 ```
 sudo docker logs -f edgeAgent
@@ -198,17 +228,17 @@ Example output:
 
 Confirm the module is working as expected by accessing the web server that the YoloModule exposes.
 
-You can Open this Web Server using the IP Address or Host Name of the Nvidia Jetson Device.
+You can Open this Web Server using the IP Address or Host Name of the Nvidia Xavier Device.
 
 Example :
  
- http://jetson-nano-00  
+ http://jetson-xavier-00  
  
  or 
  
- http://`<ipAddressOfJetsonNanoDevice>`
+ http://`<ipAddressOfJetsonXavierDevice>`
 
-You should see an unaltered video stream depending on the video source you configured. In the next section, we will enable the object detection feature by modifying a value in the associated module twin.  
+You should see an unaltered video stream depending on the video source you configured. In the next section, we will enable the object detection feature by modifying a value in the associated module twin.
 
 ![](https://pbs.twimg.com/media/D_ANYjHWwAECM-L.jpg)
 
@@ -321,13 +351,7 @@ For details on how to explore and query your data in the Azure Time Series Insig
  
 ## Contributing
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
-
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
+This project welcomes contributions and suggestions.
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
